@@ -3,9 +3,16 @@ const express = require("express");
 const app = express();
 const allRouter = require("./api/app.router");
 const cookieParser = require("cookie-parser");
+const session = require("express-session");
 
 app.use(express.json());
 app.use(cookieParser());
+app.use(session({
+  secret: 'your-secret-key',
+  resave: false,
+  saveUninitialized: true,
+  cookie: { secure: false } 
+}));
 
 app.use("/", allRouter);
 const port = process.env.APP_PORT || 4000;

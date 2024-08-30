@@ -9,10 +9,10 @@ module.exports = {
         );
     },
 
-    saveAuthStateDetails: async (state, codeChallenge, code_verifier) => {
+    saveAuthStateDetails: async (state, codeChallenge, code_verifier, nonce, url) => {
         await pool.query(
-            'INSERT INTO auth_state (state, code_challenge, code_verifier) VALUES ($1, $2, $3)',
-            [state, codeChallenge, code_verifier]
+            'INSERT INTO auth_state (state, code_challenge, code_verifier, nonce, origin_url) VALUES ($1, $2, $3, $4, $5)',
+            [state, codeChallenge, code_verifier, nonce, url]
         );
     },
     retrieveAuthStateDetails: async (state) => {

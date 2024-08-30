@@ -24,30 +24,35 @@ module.exports = {
     const code_verifier = generators.codeVerifier();
     const code_challenge = generators.codeChallenge(code_verifier);
     const state = generators.state();
-
-    //save state and code challange..........
-    saveAuthStateDetails(state, code_challenge, code_verifier);
+    const value = generators.nonce();
+    const generatedNonce = value;
 
     const authUrl = client.authorizationUrl({
       redirect_uri: REDIRECT_URI,
       scope: 'openid email profile',
-      code_challenge,
+      code_challenge: code_challenge,
       code_challenge_method: 'S256',
-      state,
+      state: state,
     });
 
+    //save auth state details..........
+    saveAuthStateDetails(state, code_challenge, code_verifier, generatedNonce, authUrl);
+
+    req.session.nonce = generatedNonce;
     res.redirect(authUrl);
   },
 
   callBackFromIdp: async (req, res) => {
     const { code, state } = req.query;
+    const nonce = req.query.nonce;
     const myState = state;
 
     // Retrieve state and code_verifier from auth_state table............
     const result = await retrieveAuthStateDetails(state);
 
     const { code_verifier } = result.rows[0];
-    const tokenSet = await client.callback('http://localhost:3000/auth-callback', {code,myState}, {
+
+    const tokenSet = await client.callback('http://localhost:3000/auth-callback', { code, myState, nonce }, {
       code_verifier: code_verifier,
       redirect_uri: REDIRECT_URI
     });
@@ -57,7 +62,7 @@ module.exports = {
     const userSub = userinfo.sub;
     const userMail = userinfo.email;
 
-    res.cookie('user_sub',userSub,{
+    res.cookie('user_sub', userSub, {
       httpOnly: true,
       secure: true
     });
@@ -65,13 +70,13 @@ module.exports = {
     //generate refresh token.......
     const myRefreshToken = jwt.sign({
       email: userMail
-  }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '1d' });
+    }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '1d' });
 
     // Save user info to the user table
     await saveUser(userinfo);
 
     // Save refresh token
-    await saveRefreshToken(userSub,myRefreshToken);
+    await saveRefreshToken(userSub, myRefreshToken);
 
     res.cookie('APP_REFRESH_TOKEN', myRefreshToken, { httpOnly: true });
     res.redirect('/token');
@@ -82,7 +87,7 @@ module.exports = {
     const payload = { access_token };
     const token = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
 
-    res.cookie('asToken',token,{
+    res.cookie('asToken', token, {
       httpOnly: true,
       secure: true
     });
