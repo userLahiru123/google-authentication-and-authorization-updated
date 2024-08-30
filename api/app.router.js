@@ -1,11 +1,11 @@
-const { authenticateJWT } = require("../auth/token_validation");
-const { googleAuthentication, callBackFromIdp, getToken, getUsers } = require("./login/login.controller");
+const { authenticateJwtHandler } = require("../auth/token_validation");
+const { googleAuthenticationHandler, authCallBackHandler, tokenHandler, usersHandler } = require("./login/login.controller");
 
 const router = require("express").Router();
 
-router.get("/auth",googleAuthentication);
-router.get("/auth-callback",callBackFromIdp);
-router.get("/token",getToken);
-router.get("/users",authenticateJWT,getUsers);
+router.get("/auth",googleAuthenticationHandler);
+router.get("/auth-callback",authCallBackHandler);
+router.get("/token",tokenHandler);
+router.get("/users",authenticateJwtHandler,usersHandler);
 
 module.exports = router;

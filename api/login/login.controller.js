@@ -12,7 +12,7 @@ let client = null;
 
 module.exports = {
 
-  googleAuthentication: async (req, res) => {
+  googleAuthenticationHandler: async (req, res) => {
     const googleIssuer = await Issuer.discover('https://accounts.google.com');
     client = new googleIssuer.Client({
       client_id: CLIENT_ID,
@@ -33,6 +33,7 @@ module.exports = {
       code_challenge: code_challenge,
       code_challenge_method: 'S256',
       state: state,
+      nonce: generatedNonce
     });
 
     //save auth state details..........
@@ -42,7 +43,7 @@ module.exports = {
     res.redirect(authUrl);
   },
 
-  callBackFromIdp: async (req, res) => {
+  authCallBackHandler: async (req, res) => {
     const { code, state } = req.query;
     const nonce = req.query.nonce;
     const myState = state;
@@ -82,7 +83,7 @@ module.exports = {
     res.redirect('/token');
   },
 
-  getToken: (req, res) => {
+  tokenHandler: (req, res) => {
     const { access_token } = req.query;
     const payload = { access_token };
     const token = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
@@ -95,7 +96,7 @@ module.exports = {
     res.redirect('/users');
   },
 
-  getUsers: async (req, res) => {
+  usersHandler: async (req, res) => {
     const user_sub = await req.cookies.user_sub;
     const result = await getUsers(user_sub);
     res.json(result.rows);
