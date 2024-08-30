@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 require('dotenv').config();
 
 module.exports = {
@@ -14,5 +15,9 @@ module.exports = {
         return res.status(401).send('Invalid Token');
     }
     return next();
+  },
+
+  generateToken: (size)=> {
+    return crypto.randomBytes(size).toString("base64url");
   }
 };

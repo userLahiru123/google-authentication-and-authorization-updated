@@ -2,6 +2,7 @@ const { Issuer, generators } = require('openid-client');
 const { saveUser, saveAuthStateDetails, retrieveAuthStateDetails, saveRefreshToken } = require("./login.service");
 const jwt = require("jsonwebtoken");
 const { getUsers } = require('../users/user.service');
+const { generateToken } = require('../../auth/token_validation');
 require('dotenv').config();
 
 const CLIENT_ID = process.env.CLIENT_ID;
@@ -33,7 +34,7 @@ module.exports = {
       code_challenge: code_challenge,
       code_challenge_method: 'S256',
       state: state,
-      nonce: generatedNonce
+      // nonce: generatedNonce
     });
 
     //save auth state details..........
@@ -53,7 +54,7 @@ module.exports = {
 
     const { code_verifier } = result.rows[0];
 
-    const tokenSet = await client.callback('http://localhost:3000/auth-callback', { code, myState, nonce }, {
+    const tokenSet = await client.callback('http://localhost:3000/auth-callback', { code, myState }, {
       code_verifier: code_verifier,
       redirect_uri: REDIRECT_URI
     });
@@ -69,9 +70,10 @@ module.exports = {
     });
 
     //generate refresh token.......
-    const myRefreshToken = jwt.sign({
-      email: userMail
-    }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '1d' });
+    // const myRefreshToken = jwt.sign({
+    //   email: userMail
+    // }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '1d' });
+    const myRefreshToken = generateToken(32);
 
     // Save user info to the user table
     await saveUser(userinfo);
