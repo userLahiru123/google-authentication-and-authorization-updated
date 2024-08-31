@@ -30,5 +30,14 @@ module.exports = {
          VALUES ((SELECT id FROM "user" WHERE sub = $1), $2, NOW() + interval '30 days')`,
         [userSub, refreshToken]
         );
+    },
+
+    getRefreshToken: async(refreshToken)=>{
+        const result = await pool.query(
+            'SELECT * FROM user_token WHERE refresh_token = $1',
+            [refreshToken]
+        );
+
+        return result;
     }
 };

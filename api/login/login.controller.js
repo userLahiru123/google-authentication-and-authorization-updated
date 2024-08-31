@@ -1,9 +1,9 @@
 const { Issuer, generators } = require('openid-client');
-const { saveUser, saveAuthStateDetails, retrieveAuthStateDetails, saveRefreshToken } = require("./login.service");
+const { saveUser, saveAuthStateDetails, retrieveAuthStateDetails, saveRefreshToken, getRefreshToken } = require("./login.service");
 const jwt = require("jsonwebtoken");
 const { getUsers } = require('../users/user.service');
 const { generateToken } = require('../../auth/token_validation');
-var { default: localStorage} = require('local-storage');
+var { default: localStorage } = require('local-storage');
 require('dotenv').config();
 
 const CLIENT_ID = process.env.CLIENT_ID;
@@ -85,16 +85,32 @@ module.exports = {
       var LocalStorage = require('node-localstorage').LocalStorage;
       localStorage = new LocalStorage('./scratch');
     }
-    localStorage.setItem('token', myRefreshToken,(7*24*60*60*1000));
+    localStorage.setItem('token', myRefreshToken, (7 * 24 * 60 * 60 * 1000));
 
     // Save refresh token
     await saveRefreshToken(userSub, myRefreshToken);
 
-    res.cookie('APP_REFRESH_TOKEN', myRefreshToken, { httpOnly: true });
+    res.cookie('APP_REFRESH_TOKEN', myRefreshToken, { 
+      maxAge: 7 * 24 * 60 * 60 * 1000, 
+      httpOnly: true 
+    });
     res.redirect('/token');
   },
 
-  tokenHandler: (req, res) => {
+  tokenHandler: async (req, res) => {
+    const appRefreshToken = await req.cookies.APP_REFRESH_TOKEN;
+
+    if (!appRefreshToken) {
+      res.send("Unauthorized user");
+    }
+
+    // check exist refresh token in database
+    const tokenResult = getRefreshToken(appRefreshToken);
+    if(!tokenResult){
+      res.send("Unauthorized token");
+    }
+
+    //....................
     const { access_token } = req.query;
     const payload = { access_token };
     const token = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
