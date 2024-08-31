@@ -3,6 +3,7 @@ const { saveUser, saveAuthStateDetails, retrieveAuthStateDetails, saveRefreshTok
 const jwt = require("jsonwebtoken");
 const { getUsers } = require('../users/user.service');
 const { generateToken } = require('../../auth/token_validation');
+var { default: localStorage} = require('local-storage');
 require('dotenv').config();
 
 const CLIENT_ID = process.env.CLIENT_ID;
@@ -64,10 +65,13 @@ module.exports = {
     const userSub = userinfo.sub;
     const userMail = userinfo.email;
 
-    res.cookie('user_sub', userSub, {
-      httpOnly: true,
-      secure: true
-    });
+    // res.cookie('user_sub', userSub, {
+    //   httpOnly: true,
+    //   secure: true
+    // });
+
+    // Save user info to the user table
+    await saveUser(userinfo);
 
     //generate refresh token.......
     // const myRefreshToken = jwt.sign({
@@ -75,8 +79,13 @@ module.exports = {
     // }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '1d' });
     const myRefreshToken = generateToken(32);
 
-    // Save user info to the user table
-    await saveUser(userinfo);
+    //save in local storage..............
+    // localStorage.set("token",myRefreshToken); //(7*24*60*60*1000)
+    if (typeof localStorage === "undefined" || localStorage === null) {
+      var LocalStorage = require('node-localstorage').LocalStorage;
+      localStorage = new LocalStorage('./scratch');
+    }
+    localStorage.setItem('token', myRefreshToken,(7*24*60*60*1000));
 
     // Save refresh token
     await saveRefreshToken(userSub, myRefreshToken);
