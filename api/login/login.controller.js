@@ -3,8 +3,10 @@ const { saveUser, saveAuthStateDetails, retrieveAuthStateDetails, saveRefreshTok
 const jwt = require("jsonwebtoken");
 const { getUsers } = require('../users/user.service');
 const { generateToken } = require('../../auth/token_validation');
-var { default: localStorage } = require('local-storage');
+// const { LocalStorage } = require('node-localstorage');
 require('dotenv').config();
+var { localStorage } = require('local-storage');
+const http = require('http');
 
 const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
@@ -65,22 +67,18 @@ module.exports = {
     const userSub = userinfo.sub;
     const userMail = userinfo.email;
 
-    // res.cookie('user_sub', userSub, {
-    //   httpOnly: true,
-    //   secure: true
-    // });
+    res.cookie('user_sub', userSub, {
+      httpOnly: true,
+      secure: true
+    });
 
     // Save user info to the user table
     await saveUser(userinfo);
 
     //generate refresh token.......
-    // const myRefreshToken = jwt.sign({
-    //   email: userMail
-    // }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '1d' });
     const myRefreshToken = generateToken(32);
 
     //save in local storage..............
-    // localStorage.set("token",myRefreshToken); //(7*24*60*60*1000)
     if (typeof localStorage === "undefined" || localStorage === null) {
       var LocalStorage = require('node-localstorage').LocalStorage;
       localStorage = new LocalStorage('./scratch');
@@ -90,10 +88,11 @@ module.exports = {
     // Save refresh token
     await saveRefreshToken(userSub, myRefreshToken);
 
-    res.cookie('APP_REFRESH_TOKEN', myRefreshToken, { 
-      maxAge: 7 * 24 * 60 * 60 * 1000, 
-      httpOnly: true 
+    res.cookie('APP_REFRESH_TOKEN', myRefreshToken, {
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      httpOnly: true
     });
+
     res.redirect('/token');
   },
 
@@ -106,20 +105,22 @@ module.exports = {
 
     // check exist refresh token in database
     const tokenResult = getRefreshToken(appRefreshToken);
-    if(!tokenResult){
+    if (!tokenResult) {
       res.send("Unauthorized token");
     }
 
-    //....................
     const { access_token } = req.query;
     const payload = { access_token };
-    const token = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '7d' });
+    const refreshtoken = 'Bearer ' + token;
 
-    res.cookie('asToken', token, {
+    // res.options.headers('authorization', 'Bearer ' + token);
+
+    res.cookie('refreshtoken', refreshtoken, {
       httpOnly: true,
       secure: true
     });
-    // res.json({ token });
+
     res.redirect('/users');
   },
 
