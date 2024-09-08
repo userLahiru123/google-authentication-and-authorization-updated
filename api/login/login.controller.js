@@ -1,12 +1,10 @@
 const { Issuer, generators } = require('openid-client');
-const { saveUser, saveAuthStateDetails, retrieveAuthStateDetails, saveRefreshToken, getRefreshToken } = require("./login.service");
-const jwt = require("jsonwebtoken");
+const { saveUser, saveAuthStateDetails, retrieveAuthStateDetails, saveRefreshToken, getRefreshToken, saveSigninKey } = require("./login.service");
 const { getUsers } = require('../users/user.service');
-const { generateToken } = require('../../auth/token_validation');
-// const { LocalStorage } = require('node-localstorage');
+const { generateToken, getMyPrivateKey } = require('../../auth/token_validation');
 require('dotenv').config();
 var { localStorage } = require('local-storage');
-const http = require('http');
+const { SignJWT } = require('jose');
 
 const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
@@ -17,6 +15,7 @@ let client = null;
 module.exports = {
 
   googleAuthenticationHandler: async (req, res) => {
+
     const googleIssuer = await Issuer.discover('https://accounts.google.com');
     client = new googleIssuer.Client({
       client_id: CLIENT_ID,
@@ -27,7 +26,8 @@ module.exports = {
 
     const code_verifier = generators.codeVerifier();
     const code_challenge = generators.codeChallenge(code_verifier);
-    const state = generators.state();
+    const stateValue = generators.state();
+    const state = stateValue;
     const value = generators.nonce();
     const generatedNonce = value;
 
@@ -37,23 +37,24 @@ module.exports = {
       code_challenge: code_challenge,
       code_challenge_method: 'S256',
       state: state,
-      // nonce: generatedNonce
     });
 
     //save auth state details..........
     saveAuthStateDetails(state, code_challenge, code_verifier, generatedNonce, authUrl);
 
-    req.session.nonce = generatedNonce;
+    //save private key
+    const private_key = getMyPrivateKey();
+    await saveSigninKey(state,private_key);
+
     res.redirect(authUrl);
   },
 
   authCallBackHandler: async (req, res) => {
     const { code, state } = req.query;
-    const nonce = req.query.nonce;
     const myState = state;
 
     // Retrieve state and code_verifier from auth_state table............
-    const result = await retrieveAuthStateDetails(state);
+    const result = await retrieveAuthStateDetails(myState);
 
     const { code_verifier } = result.rows[0];
 
@@ -65,7 +66,6 @@ module.exports = {
     // const refreshToken = tokenSet.refresh_token;
     const userinfo = await client.userinfo(tokenSet.access_token);
     const userSub = userinfo.sub;
-    const userMail = userinfo.email;
 
     res.cookie('user_sub', userSub, {
       httpOnly: true,
@@ -109,13 +109,18 @@ module.exports = {
       res.send("Unauthorized token");
     }
 
+    //use public and private key...
     const { access_token } = req.query;
     const payload = { access_token };
-    const token = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '7d' });
+
+    const private_key= getMyPrivateKey();
+    const token = await new SignJWT(payload)
+    .setProtectedHeader({ alg: 'RS256' })
+    .setIssuedAt()
+    .setExpirationTime('7d')
+    .sign(private_key);
+    
     const refreshtoken = 'Bearer ' + token;
-
-    // res.options.headers('authorization', 'Bearer ' + token);
-
     res.cookie('refreshtoken', refreshtoken, {
       httpOnly: true,
       secure: true
