@@ -1,7 +1,7 @@
 const { Issuer, generators } = require('openid-client');
 const { saveUser, saveAuthStateDetails, retrieveAuthStateDetails, saveRefreshToken, getRefreshToken, saveSigninKey } = require("./login.service");
 const { getUsers } = require('../users/user.service');
-const { generateToken, getMyPrivateKey } = require('../../auth/token_validation');
+const { generateToken, getSigningKey } = require('../../auth/token_validation');
 require('dotenv').config();
 var { localStorage } = require('local-storage');
 const { SignJWT } = require('jose');
@@ -43,7 +43,7 @@ module.exports = {
     saveAuthStateDetails(state, code_challenge, code_verifier, generatedNonce, authUrl);
 
     //save private key
-    const private_key = getMyPrivateKey();
+    const private_key = getSigningKey();
     await saveSigninKey(state,private_key);
 
     res.redirect(authUrl);

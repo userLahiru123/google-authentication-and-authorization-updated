@@ -39,11 +39,11 @@ module.exports = {
     PRIVATE_KEY = privateKey;
   },
 
-  getMyPublicKey: () => {
+  getPublicKey: () => {
     return PUBLIC_KEY;
   },
 
-  getMyPrivateKey: () => {
+  getSigningKey: () => {
     return PRIVATE_KEY;
   }
 };
