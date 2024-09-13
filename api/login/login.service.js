@@ -24,18 +24,38 @@ module.exports = {
         return result;
     },
 
-    saveRefreshToken: async (userSub, refreshToken)=>{
+    saveRefreshToken: async (userSub, refreshToken) => {
         await pool.query(
             `INSERT INTO user_token (user_id, refresh_token, expiration_date)
          VALUES ((SELECT id FROM "user" WHERE sub = $1), $2, NOW() + interval '30 days')`,
-        [userSub, refreshToken]
+            [userSub, refreshToken]
         );
     },
 
-    getRefreshToken: async(refreshToken)=>{
+    getRefreshToken: async (refreshToken) => {
         const result = await pool.query(
             'SELECT * FROM user_token WHERE refresh_token = $1',
             [refreshToken]
+        );
+
+        return result;
+    },
+
+    saveSigninKey: async (uuid, private_key) => {
+        const expiresAt = new Date();
+        expiresAt.setMonth(expiresAt.getMonth() + 3);
+
+        await pool.query(
+            `INSERT INTO signing_key (id, signing_key, expires_at, is_revoked) 
+            VALUES ($1, $2, $3, $4)`,
+            [uuid, private_key, expiresAt, false]
+        );
+    },
+
+    getPrivateKey: async (state) => {
+        const result = await pool.query(
+            'SELECT * FROM signing_key WHERE id = $1',
+            [state]
         );
 
         return result;
