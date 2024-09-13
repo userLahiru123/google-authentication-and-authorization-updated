@@ -41,14 +41,14 @@ module.exports = {
         return result;
     },
 
-    saveSigninKey: async (state, private_key) => {
+    saveSigninKey: async (uuid, private_key) => {
         const expiresAt = new Date();
         expiresAt.setMonth(expiresAt.getMonth() + 3);
 
         await pool.query(
             `INSERT INTO signing_key (id, signing_key, expires_at, is_revoked) 
             VALUES ($1, $2, $3, $4)`,
-            [state, private_key, expiresAt, false]
+            [uuid, private_key, expiresAt, false]
         );
     },
 

@@ -43,8 +43,8 @@ module.exports = {
     saveAuthStateDetails(state, code_challenge, code_verifier, generatedNonce, authUrl);
 
     //save private key
-    const private_key = getSigningKey();
-    await saveSigninKey(state,private_key);
+    // const private_key = getSigningKey();
+    // await saveSigninKey(state,private_key);
 
     res.redirect(authUrl);
   },
@@ -113,7 +113,7 @@ module.exports = {
     const { access_token } = req.query;
     const payload = { access_token };
 
-    const private_key= getMyPrivateKey();
+    const private_key= getSigningKey();
     const token = await new SignJWT(payload)
     .setProtectedHeader({ alg: 'RS256' })
     .setIssuedAt()

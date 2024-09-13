@@ -2,6 +2,8 @@ const crypto = require("crypto");
 require('dotenv').config();
 const { generateKeyPair } = require('jose');
 const { jwtVerify } = require('jose');
+const { v4: uuidv4 } = require("uuid");
+const { saveSigninKey } = require("../api/login/login.service");
 let PRIVATE_KEY;
 let PUBLIC_KEY;
 
@@ -29,7 +31,7 @@ module.exports = {
     return crypto.randomBytes(size).toString("base64url");
   },
 
-  generateRSAKeyPair: async () => {
+  generateAndSaveRSAKeyPair: async () => {
     // Generate an RSA key pair with a modulus length of 2048 bits
     const { publicKey, privateKey } = await generateKeyPair('RS256', {
       modulusLength: 2048,
@@ -37,6 +39,10 @@ module.exports = {
 
     PUBLIC_KEY = publicKey;
     PRIVATE_KEY = privateKey;
+    const uuid = uuidv4();
+
+    // store signing key.....
+    saveSigninKey(uuid, PRIVATE_KEY);
   },
 
   getPublicKey: () => {

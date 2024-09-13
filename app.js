@@ -4,7 +4,7 @@ const app = express();
 const allRouter = require("./api/app.router");
 const cookieParser = require("cookie-parser");
 const session = require("express-session");
-const { generateRSAKeyPair } = require("./auth/token_validation");
+const { generateAndSaveRSAKeyPair } = require("./auth/token_validation");
 
 app.use(express.json());
 app.use(cookieParser());
@@ -18,6 +18,6 @@ app.use(session({
 app.use("/", allRouter);
 const port = process.env.APP_PORT || 4000;
 app.listen(port, () => {
-  generateRSAKeyPair();
+  generateAndSaveRSAKeyPair();
   console.log("server up and running on PORT :", port);
 });
